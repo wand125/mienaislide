@@ -383,9 +383,9 @@ phina.define('Game',{
         let tweet = function() {
             let text = (cheating === 0) ? "一度も数字を見ずに" : cheating + "回数字を見て";
             text += (puzzleSize === 3) ? "8" : "15";
-            text += (cheating === 0) ? "パズルをクリアしました！\n" : "パズルをクリアしました。\n";
+            text += "パズルをクリア！\n"
             text += "クリアタイム：" + (Math.floor(time / 10) / 100).toFixed(2) + "秒\n";
-            text += "手数：" + moves + "\n";
+            text += "手数：" + moves;
             let url = phina.social.Twitter.createURL({
                 text: text,
                 hashtags: '見えないスライドパズル'

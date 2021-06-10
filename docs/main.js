@@ -512,28 +512,28 @@ phina.define('Game',{
             fill: 'darkslateblue',
             fontSize: 36,
             fontFamily: FONT_FAMILY
-        }).addChildTo(this).setPosition(this.gridX.center(-4), this.gridY.center(-6.5));
+        }).addChildTo(this).setPosition(this.gridX.center(-4), this.gridY.center(-7.0));
         // 記憶時間表示タイム
         let memoryTimeLabel = Label({
             text: "記憶時間\n" + (Math.floor(memoryTime / 10) / 100).toFixed(2) + "s",
             fill: 'darkslategray',
             fontSize: 36,
             fontFamily: FONT_FAMILY
-        }).addChildTo(this).setPosition(this.gridX.center(0.5), this.gridY.center(-6.5));
+        }).addChildTo(this).setPosition(this.gridX.center(0.5), this.gridY.center(-7.0));
         // 手数表示ラベル
         let movesLabel = Label({
             text: "手数\n" + moves,
             fill: 'darkslateblue',
             fontSize: 36,
             fontFamily: FONT_FAMILY
-        }).addChildTo(this).setPosition(this.gridX.center(5), this.gridY.center(-6.5));
+        }).addChildTo(this).setPosition(this.gridX.center(5), this.gridY.center(-7.0));
         // カンニング数表示ラベル
         let cheatNumLabel = Label({
             text: "見た回数\n" + cheating,
             fill: 'darkred',
             fontSize: 36,
             fontFamily: FONT_FAMILY
-        }).addChildTo(this).setPosition(this.gridX.center(5), this.gridY.center(-4.5));
+        }).addChildTo(this).setPosition(this.gridX.center(5), this.gridY.center(-5.0));
         // ツイートボタン
         let tweetButton = RectangleShape({
             width: (PIECE_SIZE - 16) * 2,

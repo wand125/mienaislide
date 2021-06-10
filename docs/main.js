@@ -468,7 +468,7 @@ phina.define('Game',{
         }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(6));
         let cheatingLabel = Label({
             text: "数字を見る",
-            fill: 'gray',
+            fill: 'white',
             fontSize: 36,
             fontFamily: FONT_FAMILY
         }).addChildTo(cheatingButton);

@@ -195,9 +195,10 @@ phina.define('Game',{
         // 変数
         let moves = 0; // 手数
         let time = 0;  // 経過時間
+        let memoryTime = 0;  // 記憶時間
         let cheating = 0; // カンニング回数
         let isTimeCounting = false; // タイム計測中か否か
-        let isCheating = false; // カンニング中か否か
+        let isCheating = true; // カンニング中か否か
         // sprites
         let piece = Array(puzzleSize * puzzleSize - 1);
         let numLabel = Array(puzzleSize * puzzleSize - 1);
@@ -511,21 +512,28 @@ phina.define('Game',{
             fill: 'darkslateblue',
             fontSize: 36,
             fontFamily: FONT_FAMILY
-        }).addChildTo(this).setPosition(this.gridX.center(-5), this.gridY.center(-5.5));
+        }).addChildTo(this).setPosition(this.gridX.center(-4), this.gridY.center(-6.5));
+        // 記憶時間表示タイム
+        let memoryTimeLabel = Label({
+            text: "記憶時間\n" + (Math.floor(memoryTime / 10) / 100).toFixed(2) + "s",
+            fill: 'darkslategray',
+            fontSize: 36,
+            fontFamily: FONT_FAMILY
+        }).addChildTo(this).setPosition(this.gridX.center(0.5), this.gridY.center(-6.5));
         // 手数表示ラベル
         let movesLabel = Label({
             text: "手数\n" + moves,
             fill: 'darkslateblue',
             fontSize: 36,
             fontFamily: FONT_FAMILY
-        }).addChildTo(this).setPosition(this.gridX.center(0), this.gridY.center(-5.5));
+        }).addChildTo(this).setPosition(this.gridX.center(5), this.gridY.center(-6.5));
         // カンニング数表示ラベル
         let cheatNumLabel = Label({
             text: "見た回数\n" + cheating,
             fill: 'darkred',
             fontSize: 36,
             fontFamily: FONT_FAMILY
-        }).addChildTo(this).setPosition(this.gridX.center(5), this.gridY.center(-5.5));
+        }).addChildTo(this).setPosition(this.gridX.center(5), this.gridY.center(-4.5));
         // ツイートボタン
         let tweetButton = RectangleShape({
             width: (PIECE_SIZE - 16) * 2,
@@ -574,6 +582,8 @@ phina.define('Game',{
                 if (time > MAX_TIME) time = MAX_TIME;
             }
             if (isCheating) {
+                memoryTime += app.deltaTime;
+                if (memoryTime > MAX_TIME) memoryTime = MAX_TIME;
                 cheatingButton.fill = "darkorange";
                 cheatingButton.stroke = "chocolate";
             }
@@ -582,6 +592,7 @@ phina.define('Game',{
                 cheatingButton.stroke = "darkred";
             }
             timeLabel.text = "時間\n" + (Math.floor(time / 10) / 100).toFixed(2) + "s";
+            memoryTimeLabel.text = "記憶時間\n" + (Math.floor(memoryTime / 10) / 100).toFixed(2)+"s";
             movesLabel.text = "手数\n" + moves;
             cheatNumLabel.text = "見た回数\n" + cheating;
             // キーボード

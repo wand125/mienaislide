@@ -40,7 +40,7 @@ phina.define('Title',{
         let self = this;
         // タイトル
         let titleLabel = Label({
-            text: "見えない\nスライドパズル",
+            text: "見えない\nスライドパズル\n魔改造 -Dual-",
             fill: 'white',
             stroke: 'darkslateblue',
             strokeWidth: 12,
@@ -60,7 +60,7 @@ phina.define('Title',{
             stroke: 'darkslateblue',
             strokeWidth: 12,
             cornerRadius: 10
-        }).addChildTo(this);
+        })// .addChildTo(this);
         howToButton.setInteractive(true);
         howToButton.onpointstart = function() {
             self.app.pushScene(HowToPlay());
@@ -71,6 +71,28 @@ phina.define('Title',{
             fontSize: 32,
             fontFamily: FONT_FAMILY
         }).addChildTo(howToButton);
+
+        const linkButton = RectangleShape({
+            width: (PIECE_SIZE - 16) * 2,
+            height: 72,
+            fill: 'slateblue',
+            stroke: 'darkslateblue',
+            strokeWidth: 12,
+            cornerRadius: 10
+        }).addChildTo(this);
+        linkButton.setInteractive(true);
+        linkButton.onpointstart = function () {
+            window.open('https://tsukatomo.github.io/mienaislide/');
+        };
+        Label({
+            text: "本家リンク",
+            fill: 'white',
+            fontSize: 32,
+            fontFamily: FONT_FAMILY
+        }).addChildTo(linkButton);
+
+
+
         // スタートボタン(8)
         let start8Button = RectangleShape({
             width: (PIECE_SIZE - 16) * 2,
@@ -112,7 +134,8 @@ phina.define('Title',{
         //ボタン配置
         start8Button.setPosition(this.gridX.center(-4), this.gridY.center(3));
         start15Button.setPosition(this.gridX.center(4), this.gridY.center(3));
-        howToButton.setPosition(this.gridX.center(0), this.gridY.center(6));
+        // howToButton.setPosition(this.gridX.center(0), this.gridY.center(6));
+        linkButton.setPosition(this.gridX.center(0), this.gridY.center(6));
 
         
     },
@@ -314,7 +337,7 @@ phina.define('Game',{
                     this.numLabel[i] = Label({
                         text: i + 1,
                         fill: 'white',
-                        fontSize: 48,
+                        fontSize: 36,
                         fontFamily: FONT_FAMILY
                     }).addChildTo(this.piece[i]);
                 }

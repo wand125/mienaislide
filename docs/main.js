@@ -40,7 +40,7 @@ phina.define('Title',{
         let self = this;
         // タイトル
         let titleLabel = Label({
-            text: "見えない\nスライドパズル\n魔改造 -Dual-",
+            text: "見えない\nスライドパズル\n -Dual-",
             fill: 'white',
             stroke: 'darkslateblue',
             strokeWidth: 12,

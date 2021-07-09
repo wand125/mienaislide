@@ -191,128 +191,240 @@ phina.define('Game',{
         // パズルサイズを前シーンから受け取る
         let puzzleSize = param.puzzleSize;
         // ピース配置の配列
-        let piecePos = Array(puzzleSize * puzzleSize);
         // 変数
-        let moves = 0; // 手数
         let time = 0;  // 経過時間
         let memoryTime = 0;  // 記憶時間
         let cheating = 0; // カンニング回数
         let isTimeCounting = false; // タイム計測中か否か
         let isCheating = true; // カンニング中か否か
+
+        class Board {
+            constructor(index) {
+                this.index = index;
+                this.piecePos = Array(puzzleSize * puzzleSize);
+                this.piece = Array(puzzleSize * puzzleSize - 1);
+                this.numLabel = Array(puzzleSize * puzzleSize - 1);
+                this.moves = 0;
+                this.clear = false;
+            }
+            hideNum() {
+                for (let i = 0; i < this.numLabel.length; i++) {
+                    this.numLabel[i].text = "?";
+                }
+                return;
+            }
+            showNum() {
+                for (let i = 0; i < this.numLabel.length; i++) {
+                    this.numLabel[i].text = i + 1;
+                }
+            }
+            initPiece() {
+                for (let i = 0; i < this.piecePos.length; i++) {
+                    this.piecePos[i] = i;
+                }
+            }
+            shufflePiece() {
+                for (let i = 0; i < this.piecePos.length - 1; i++) {
+                    let j = Random.randint(i, this.piecePos.length - 2);
+                    [this.piecePos[i], this.piecePos[j]] = [this.piecePos[j], this.piecePos[i]];
+                }
+            }
+            parityCheckAndModify(puzzleSize) {
+                let numSwap = 0;
+                // ピース配置をコピー
+                const copy = this.piecePos.concat();
+                // ソートを行い，入れ替え回数を計算する … numSwap
+                for (let i = 0; i < copy.length; i++) {
+                    if (copy[i] != i) {
+                        let j = copy.indexOf(i);
+                        [copy[i], copy[j]] = [copy[j], copy[i]];
+                        numSwap++;
+                    }
+                }
+                //console.log("numSwap = ", numSwap);
+                // 空白マス（ピース配置配列の中で値が最大の要素）が右下から何マス離れているかを数える … distBlank
+                const distX = (puzzleSize - 1) - this.piecePos.indexOf(puzzleSize * puzzleSize - 1) % puzzleSize;
+                const distY = (puzzleSize - 1) - Math.floor(this.piecePos.indexOf(puzzleSize * puzzleSize - 1) / puzzleSize);
+                const distBlank = distX + distY;
+                //console.log("distBlank = ", distBlank);
+                // numSwap と distBlank の偶奇が一致するなら解答可能．修正せずに終了
+                if ((numSwap + distBlank) % 2 === 0) return;
+                // 解答不可能なら"1"と"2"の位置を交換
+                const index1 = this.piecePos.indexOf(1);
+                const index2 = this.piecePos.indexOf(2);
+                [this.piecePos[index1], this.piecePos[index2]] = [this.piecePos[index2], this.piecePos[index1]];
+            }
+            slide(puzzleSize, index) {
+                if (this.clear) { return false; }
+                const num = this.piecePos[index];
+                console.log(this.index, index, num);
+                const blankIndex = this.piecePos.indexOf(puzzleSize * puzzleSize - 1);
+                const pieceIndex = this.piecePos.indexOf(num);
+                //console.log(blankIndex, pieceIndex);
+                // 横移動
+                if (Math.floor(blankIndex / puzzleSize) === Math.floor(pieceIndex / puzzleSize)) {
+                    // 左へ
+                    if (blankIndex < pieceIndex) {
+                        for (let i = blankIndex; i < pieceIndex; i++) {
+                            [this.piecePos[i], this.piecePos[i + 1]] = [this.piecePos[i + 1], this.piecePos[i]];
+                            if (this.moves < MAX_MOVE) { this.moves++; }
+                        }
+                    }
+                    // 右へ
+                    else {
+                        for (let i = blankIndex; i > pieceIndex; i--) {
+                            [this.piecePos[i], this.piecePos[i - 1]] = [this.piecePos[i - 1], this.piecePos[i]];
+                            if (this.moves < MAX_MOVE) { this.moves++; }
+                        }
+                    }
+                    return true;
+                }
+                // 縦移動
+                else if ((blankIndex % puzzleSize) === (pieceIndex % puzzleSize)) {
+                    // 上へ
+                    if (blankIndex < pieceIndex) {
+                        for (let i = blankIndex; i < pieceIndex; i += puzzleSize) {
+                            [this.piecePos[i], this.piecePos[i + puzzleSize]] = [this.piecePos[i + puzzleSize], this.piecePos[i]];
+                            if (this.moves < MAX_MOVE) { this.moves++; }
+                        }
+                    }
+                    // 下へ
+                    else {
+                        for (let i = blankIndex; i > pieceIndex; i -= puzzleSize) {
+                            [this.piecePos[i], this.piecePos[i - puzzleSize]] = [this.piecePos[i - puzzleSize], this.piecePos[i]];
+                            if (this.moves < MAX_MOVE) { this.moves++; }
+                        }
+                    }
+                    return true;
+                }
+                return false;
+            }
+            createPiece(parent) {
+                for (let i = 0; i < this.piece.length; i++) {
+                    this.piece[i] = RectangleShape({
+                        width: PIECE_SIZE * 0.5 - 16,
+                        height: PIECE_SIZE * 0.5 - 16,
+                        fill: 'slateblue',
+                        stroke: 'darkslateblue',
+                        strokeWidth: 12,
+                        //cornerRadius: 10
+                    }).addChildTo(parent).setPosition(0, 0);
+                    this.piece[i].x = this.getPositionByNumber(puzzleSize, this.piecePos.indexOf(i)).x;
+                    this.piece[i].y = this.getPositionByNumber(puzzleSize, this.piecePos.indexOf(i)).y;
+                    this.numLabel[i] = Label({
+                        text: i + 1,
+                        fill: 'white',
+                        fontSize: 48,
+                        fontFamily: FONT_FAMILY
+                    }).addChildTo(this.piece[i]);
+                }
+            }
+            movePiece(puzzleSize) {
+                // ピースの位置を更新
+                for (let j = 0; j < this.piece.length; j++) {
+                    const moveToX = this.getPositionByNumber(puzzleSize, this.piecePos.indexOf(j)).x;
+                    const moveToY = this.getPositionByNumber(puzzleSize, this.piecePos.indexOf(j)).y;
+                    console.log(this.index, moveToX, moveToY);
+                    this.piece[j].tweener
+                        .moveTo(moveToX, moveToY, 100, 'easeInOutCubic') // 移動アニメーション
+                        .play();
+                }
+
+            }
+            get pieceSize() {
+                return PIECE_SIZE * 0.5;
+            }
+            getPositionByNumber(puzzleSize, num) {
+                // ピース配置グリッド
+                const pieceGridX = Grid({
+                    width: puzzleSize * this.pieceSize,
+                    columns: puzzleSize,
+                    offset: self.gridX.center() * (0.5+this.index) - (puzzleSize * this.pieceSize) / 2 + (this.pieceSize) / 2
+                });
+                const pieceGridY = Grid({
+                    width: puzzleSize * this.pieceSize,
+                    columns: puzzleSize,
+                    offset: self.gridY.center() * 0.6 - (puzzleSize * this.pieceSize) / 2 + (this.pieceSize) / 2
+                });
+                // ピース位置を示す数値からピーズの座標を求める
+                return {
+                    x: pieceGridX.span(num % puzzleSize),
+                    y: pieceGridY.span(Math.floor(num / puzzleSize)),
+                };
+            }
+        }
+
+        const game = {
+            boards: [],
+            manipulator: {
+                piece: Array(puzzleSize * puzzleSize - 1),
+                get pieceSize() {
+                    return PIECE_SIZE;
+                },
+                getPositionByNumber(puzzleSize, num) {
+                    // ピース配置グリッド
+                    let pieceGridX = Grid({
+                        width: puzzleSize * this.pieceSize,
+                        columns: puzzleSize,
+                        offset: self.gridX.center() - (puzzleSize * this.pieceSize) / 2 + (this.pieceSize) / 2
+                    });
+                    let pieceGridY = Grid({
+                        width: puzzleSize * this.pieceSize,
+                        columns: puzzleSize,
+                        offset: self.gridY.center() * 1.4 - (puzzleSize * this.pieceSize) / 2 + (this.pieceSize) / 2
+                    });
+                    // ピース位置を示す数値からピーズの座標を求める
+                    return {
+                        x: pieceGridX.span(num % puzzleSize),
+                        y: pieceGridY.span(Math.floor(num / puzzleSize)),
+                    };
+                },
+                setPieceInteractive(bool) {
+                    for (let i = 0; i < this.piece.length; i++) {
+                        this.piece[i].setInteractive(bool);
+                    }
+                    return;
+                }
+            }
+        }
+        game.boards.push(new Board(0));
+        game.boards.push(new Board(1));
+        const board = new Board();
+
         // sprites
-        let piece = Array(puzzleSize * puzzleSize - 1);
-        let numLabel = Array(puzzleSize * puzzleSize - 1);
         let cheatingButton;
         let quitButton;
-        // ピース配置グリッド
-        let pieceGridX = Grid({
-            width: puzzleSize * PIECE_SIZE,
-            columns: puzzleSize,
-            offset: self.gridX.center() - (puzzleSize * PIECE_SIZE) / 2 + (PIECE_SIZE) / 2
-        }); 
-        let pieceGridY = Grid({
-            width: puzzleSize * PIECE_SIZE,
-            columns: puzzleSize,
-            offset: self.gridY.center() - (puzzleSize * PIECE_SIZE) / 2 + (PIECE_SIZE) / 2
-        });
+
         // -------------------------------- function --------------------------------------//
         // ピース位置をシャッフルする
-        let shufflePiece = function() {
-            for (let i = 0; i < piecePos.length; i++) {
-                let j = Random.randint(i, piecePos.length - 1);
-                [piecePos[i], piecePos[j]] = [piecePos[j], piecePos[i]];
-            }
-        };
         // パリティチェックを行い，解答不能なら修正する
-        let parityCheckAndModify = function(puzzleSize) {
-            let numSwap = 0;
-            let distBlank;
-            // ピース配置をコピー
-            let copy = piecePos.concat();
-            // ソートを行い，入れ替え回数を計算する … numSwap
-            for (let i = 0; i < copy.length; i++) {
-                if (copy[i] != i) {
-                    let j = copy.indexOf(i);
-                    [copy[i], copy[j]] = [copy[j], copy[i]];
-                    numSwap++;
-                }
-            }
-            //console.log("numSwap = ", numSwap);
-            // 空白マス（ピース配置配列の中で値が最大の要素）が右下から何マス離れているかを数える … distBlank
-            let distX = (puzzleSize - 1) - piecePos.indexOf(puzzleSize * puzzleSize - 1) % puzzleSize;
-            let distY = (puzzleSize - 1) - Math.floor(piecePos.indexOf(puzzleSize * puzzleSize - 1) / puzzleSize);
-            distBlank = distX + distY;
-            //console.log("distBlank = ", distBlank);
-            // numSwap と distBlank の偶奇が一致するなら解答可能．修正せずに終了
-            if ((numSwap + distBlank) % 2 === 0) return;
-            // 解答不可能なら"1"と"2"の位置を交換
-            let index1 = piecePos.indexOf(1);
-            let index2 = piecePos.indexOf(2);
-            [piecePos[index1], piecePos[index2]] = [piecePos[index2], piecePos[index1]];
-            return;
-        };
-        // ピース位置を示す数値からピーズの座標を求める
-        let getPositionByNumber = function(puzzleSize, num) {
-            return {
-                x: pieceGridX.span(num % puzzleSize),
-                y: pieceGridY.span(Math.floor(num / puzzleSize)),
-            };
-        };
+
+
         // ピースをスライドする
-        let slide = function(puzzleSize, num) {
-            let blankIndex = piecePos.indexOf(puzzleSize * puzzleSize - 1);
-            let pieceIndex = piecePos.indexOf(num);
-            //console.log(blankIndex, pieceIndex);
-            // 横移動
-            if (Math.floor(blankIndex / puzzleSize) === Math.floor(pieceIndex / puzzleSize)) {
-                // 左へ
-                if (blankIndex < pieceIndex) {
-                    for (let i = blankIndex; i < pieceIndex; i++) {
-                        [piecePos[i], piecePos[i+1]] = [piecePos[i+1], piecePos[i]];
-                        if (moves < MAX_MOVE) moves++;
-                    }
-                }
-                // 右へ
-                else {
-                    for (let i = blankIndex; i > pieceIndex; i--) {
-                        [piecePos[i], piecePos[i-1]] = [piecePos[i-1], piecePos[i]];
-                        if (moves < MAX_MOVE) moves++;
-                    }
-                }
-                return true;
-            }
-            // 縦移動
-            else if ((blankIndex % puzzleSize) === (pieceIndex % puzzleSize)) {
-                // 上へ
-                if (blankIndex < pieceIndex) {
-                    for (let i = blankIndex; i < pieceIndex; i+= puzzleSize) {
-                        [piecePos[i], piecePos[i+puzzleSize]] = [piecePos[i+puzzleSize], piecePos[i]];
-                        if (moves < MAX_MOVE) moves++;
-                    }
-                }
-                // 下へ
-                else {
-                    for (let i = blankIndex; i > pieceIndex; i-= puzzleSize) {
-                        [piecePos[i], piecePos[i-puzzleSize]] = [piecePos[i-puzzleSize], piecePos[i]];
-                        if (moves < MAX_MOVE) moves++;
-                    }
-                }
-                return true;
-            }
-            return false;
-        };
         // ピースが揃っているかどうかチェック
-        let clearCheck = function() {
-            for (let i = 0; i < piecePos.length - 1; i++) {
-                if (piecePos[i] != i) return false;
+        let clearCheck = function () {
+            if (!game.boards.map((board)=>{
+                if (board.clear) { return true; }
+                for (let i = 0; i < board.piecePos.length - 1; i++) {
+                    if (board.piecePos[i] != i) {return false;}
+                }
+                board=>board.showNum();
+                for (let i = 0; i < game.manipulator.piece.length; i++) {
+                    board.piece[i].fill = "darkorange";
+                    board.piece[i].stroke = "chocolate";
+                }
+                board.clear = true;
+                return true;
+            }).every(e=>e)) {
+                return false;
             }
             // 数字を表示
-            showNum();
+            game.boards.forEach(board=>board.showNum());
             // ピースを移動不能にして，色を変更
-            setPieceInteractive(false);
-            for (let i = 0; i < piece.length; i++){
-                piece[i].fill = "darkorange";
-                piece[i].stroke = "chocolate";
+            game.manipulator.setPieceInteractive(false);
+            for (let i = 0; i < game.manipulator.piece.length; i++) {
+                game.manipulator.piece[i].fill = "darkorange";
+                game.manipulator.piece[i].stroke = "chocolate";
             }
             // カンニングボタンを使用不能にし，下げる
             cheatingButton.setInteractive(false);
@@ -336,13 +448,13 @@ phina.define('Game',{
                 cong.stroke = 'darkred';
             }
             cong.tweener
-                .set({alpha: 0.0})
+                .set({ alpha: 0.0 })
                 .wait(500)
-                .set({alpha: 1.0})
+                .set({ alpha: 1.0 })
                 .wait(50)
-                .set({alpha: 0.0})
+                .set({ alpha: 0.0 })
                 .wait(50)
-                .set({alpha: 1.0})
+                .set({ alpha: 1.0 })
                 .wait(300)
                 .moveTo(self.gridX.center(), self.gridY.center(-4), 600, 'easeOutCubic')
                 .play();
@@ -359,34 +471,14 @@ phina.define('Game',{
                 .play();
             return true;
         };
-        // ピースの数字を”？”にする
-        let hideNum = function() {
-            for (let i = 0; i < numLabel.length; i++) {
-                numLabel[i].text = "?";
-            }
-            return;
-        };
-        // ピースの数字を表示する
-        let showNum = function() {
-            for (let i = 0; i < numLabel.length; i++) {
-                numLabel[i].text = i + 1;
-            }
-            return;
-        };
         // ピースのクリックイベントのオンオフを切り替え
-        let setPieceInteractive = function(bool) {
-            for (let i = 0; i < piece.length; i++) {
-                piece[i].setInteractive(bool);
-            }
-            return;
-        }
         // ツイート文を生成＆ツイート
-        let tweet = function() {
+        let tweet = function () {
             let text = (cheating === 0) ? "一度も数字を見ずに" : cheating + "回数字を見て";
             text += (puzzleSize === 3) ? "8" : "15";
             text += "パズルをクリア！\n"
             text += "クリアタイム：" + (Math.floor(time / 10) / 100).toFixed(2) + "秒\n";
-            text += "手数：" + moves;
+            text += "手数：" + board.moves;
             let url = phina.social.Twitter.createURL({
                 text: text,
                 hashtags: '見えないスライドパズル'
@@ -394,68 +486,76 @@ phina.define('Game',{
             window.open(url, 'share window', 'width=480, height=320');
         };
         // ------------------------------------------------------------------------------------//
-        // ピース配置の配列を初期化
-        for (let i = 0; i < piecePos.length; i++) {
-            piecePos[i] = i;
-        }
-        // シャッフル
-        shufflePiece();
-        //console.log(piecePos);
-        // パリティチェック
-        parityCheckAndModify(puzzleSize);
+
+        game.boards.forEach(board => {
+            // ピース配置の配列を初期化
+            board.initPiece();
+            // シャッフル
+            board.shufflePiece();
+            //console.log(piecePos);
+            // パリティチェック
+            board.parityCheckAndModify(puzzleSize);
+
+            board.createPiece(this);
+        });
+        board.initPiece();
+
         //console.log(piecePos);
         // スプライトの設定
-        for (let i = 0; i < piece.length; i++){
-            piece[i] = RectangleShape({
+        for (let i = 0; i < game.manipulator.piece.length; i++) {
+            game.manipulator.piece[i] = RectangleShape({
                 width: PIECE_SIZE - 16,
                 height: PIECE_SIZE - 16,
                 fill: 'slateblue',
                 stroke: 'darkslateblue',
                 strokeWidth: 12,
                 //cornerRadius: 10
-            }).addChildTo(this).setPosition(0,0);
-            piece[i].x = getPositionByNumber(puzzleSize, piecePos.indexOf(i)).x;
-            piece[i].y = getPositionByNumber(puzzleSize, piecePos.indexOf(i)).y;
-            piece[i].setInteractive(true);
+            }).addChildTo(this).setPosition(0, 0);
+            game.manipulator.piece[i].x = game.manipulator.getPositionByNumber(puzzleSize, board.piecePos.indexOf(i)).x;
+            game.manipulator.piece[i].y = game.manipulator.getPositionByNumber(puzzleSize, board.piecePos.indexOf(i)).y;
+            game.manipulator.piece[i].setInteractive(true);
             // クリックイベント
-            piece[i].onpointstart = function() {
+            game.manipulator.piece[i].onpointstart = function () {
+                const index = board.piecePos.indexOf(i)
+                board.slide(puzzleSize, index);
                 // ピースをスライド（スライド失敗ならreturn）
-                if (!slide(puzzleSize, i)) return;
+                if (game.boards.map(board => {
+                    if (board.slide(puzzleSize, index)) {
+                        board.movePiece(puzzleSize);
+                        return true;
+                    }
+                    return false;
+                }).every(e=>!e)) {
+                    return;
+                }
                 //console.log(piecePos);
                 //　数字を隠す
-                hideNum();
+                // game.boards.forEach(board => board.hideNum());
                 isCheating = false;
                 cheatingLabel.fill = 'white';
                 // 時間計測開始
                 isTimeCounting = true;
                 // ピースの位置を更新
-                for (let j = 0; j < piece.length; j++) {
-                    let moveToX = getPositionByNumber(puzzleSize, piecePos.indexOf(j)).x;
-                    let moveToY = getPositionByNumber(puzzleSize, piecePos.indexOf(j)).y;
-                    //piece[j].x = getPositionByNumber(3, piecePos.indexOf(j), self).x;
-                    //piece[j].y = getPositionByNumber(3, piecePos.indexOf(j), self).y;
-                    piece[j].tweener
-                        .call(()=>{
+                for (let j = 0; j < game.manipulator.piece.length; j++) {
+                    const moveToX = game.manipulator.getPositionByNumber(puzzleSize, board.piecePos.indexOf(j)).x;
+                    const moveToY = game.manipulator.getPositionByNumber(puzzleSize, board.piecePos.indexOf(j)).y;
+                    game.manipulator.piece[j].tweener
+                        .call(() => {
                             // クリック不可に
-                            setPieceInteractive(false);
+                            game.manipulator.setPieceInteractive(false);
                             cheatingButton.setInteractive(false);
                         })
                         .moveTo(moveToX, moveToY, 100, 'easeInOutCubic') // 移動アニメーション
-                        .call(()=>{
+                        .call(() => {
                             // 再びクリック可能に
-                            setPieceInteractive(true);
+                            game.manipulator.setPieceInteractive(true);
                             cheatingButton.setInteractive(true);
                         })
-                        .call(()=>{ clearCheck(); }) // 成功判定
+                        .call(() => { clearCheck(); }) // 成功判定
                         .play();
                 }
             }
-            numLabel[i] = Label({
-                text: i + 1,
-                fill: 'white',
-                fontSize: 48,
-                fontFamily: FONT_FAMILY 
-            }).addChildTo(piece[i]);
+
         }
         // カンニングボタン
         cheatingButton = RectangleShape({
@@ -465,7 +565,9 @@ phina.define('Game',{
             stroke: 'darkred',
             strokeWidth: 12,
             cornerRadius: 10
-        }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(6));
+        });
+        // .addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(6));
+
         let cheatingLabel = Label({
             text: "数字を見る",
             fill: 'white',
@@ -473,14 +575,14 @@ phina.define('Game',{
             fontFamily: FONT_FAMILY
         }).addChildTo(cheatingButton);
         cheatingButton.setInteractive(false);
-        cheatingButton.onpointstart = function() {
+        cheatingButton.onpointstart = function () {
             if (isCheating) {
-                hideNum();
+                game.boards.forEach(board=>board.hideNum());
                 isCheating = false;
             }
-            else{
+            else {
                 if (cheating < MAX_CHEAT) cheating++;
-                showNum();
+                game.boards.forEach(board=>board.showNum());
                 isCheating = true;
             }
             cheatingButton.tweener
@@ -497,7 +599,7 @@ phina.define('Game',{
             strokeWidth: 12,
         }).addChildTo(this).setPosition(48, 48);
         quitButton.setInteractive(true);
-        quitButton.onpointstart = function() {
+        quitButton.onpointstart = function () {
             self.exit();
         }
         Label({
@@ -522,7 +624,7 @@ phina.define('Game',{
         }).addChildTo(this).setPosition(this.gridX.center(1), this.gridY.center(-7.0));
         // 手数表示ラベル
         let movesLabel = Label({
-            text: "手数\n" + moves,
+            text: "手数\n" + board.moves,
             fill: 'darkslateblue',
             fontSize: 36,
             fontFamily: FONT_FAMILY
@@ -533,7 +635,8 @@ phina.define('Game',{
             fill: 'darkred',
             fontSize: 36,
             fontFamily: FONT_FAMILY
-        }).addChildTo(this).setPosition(this.gridX.center(5), this.gridY.center(-5.5));
+        })
+        // .addChildTo(this).setPosition(this.gridX.center(5), this.gridY.center(-5.5));
         // ツイートボタン
         let tweetButton = RectangleShape({
             width: (PIECE_SIZE - 16) * 2,
@@ -544,7 +647,7 @@ phina.define('Game',{
             cornerRadius: 10
         }).addChildTo(this).setPosition(this.gridX.center(-4), 1200);
         tweetButton.setInteractive(false);
-        tweetButton.onpointstart = function() {
+        tweetButton.onpointstart = function () {
             tweet();
         };
         Label({
@@ -563,7 +666,7 @@ phina.define('Game',{
             cornerRadius: 10
         }).addChildTo(this).setPosition(this.gridX.center(4), 1200);
         titleButton.setInteractive(false);
-        titleButton.onpointstart = function() {
+        titleButton.onpointstart = function () {
             self.exit();
         };
         Label({
@@ -575,7 +678,7 @@ phina.define('Game',{
 
 
         // 毎フレーム更新
-        this.update = function(app){
+        this.update = function (app) {
             // 経過時間表示
             if (isTimeCounting) {
                 time += app.deltaTime;
@@ -592,8 +695,8 @@ phina.define('Game',{
                 cheatingButton.stroke = "darkred";
             }
             timeLabel.text = "時間\n" + (Math.floor(time / 10) / 100).toFixed(2) + "s";
-            memoryTimeLabel.text = "記憶時間\n" + (Math.floor(memoryTime / 10) / 100).toFixed(2)+"s";
-            movesLabel.text = "手数\n" + moves;
+            memoryTimeLabel.text = "記憶時間\n" + (Math.floor(memoryTime / 10) / 100).toFixed(2) + "s";
+            movesLabel.text = "手数\n" + board.moves;
             cheatNumLabel.text = "見た回数\n" + cheating;
             // キーボード
             /*
@@ -610,7 +713,7 @@ phina.define('Game',{
 //-------------------------
 // M A I N
 //-------------------------
-phina.main(function(){
+phina.main(function () {
     var app = GameApp({
         startLabel: 'title',
         //assets: ASSETS,

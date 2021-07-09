@@ -36,7 +36,7 @@ phina.define('Title',{
             //width: SCREEN_WIDTH,
             //height: SCREEN_HEIGHT
         });
-        this.backgroundColor = 'yellowgreen'
+        this.backgroundColor = '#0C3310'
         let self = this;
         // タイトル
         let titleLabel = Label({

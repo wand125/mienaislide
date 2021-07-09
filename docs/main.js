@@ -530,7 +530,7 @@ phina.define('Game',{
                 }
                 //console.log(piecePos);
                 //　数字を隠す
-                // game.boards.forEach(board => board.hideNum());
+                game.boards.forEach(board => board.hideNum());
                 isCheating = false;
                 cheatingLabel.fill = 'white';
                 // 時間計測開始

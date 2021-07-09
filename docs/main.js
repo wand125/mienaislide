@@ -501,10 +501,11 @@ phina.define('Game',{
             text += (puzzleSize === 3) ? "8" : "15";
             text += "パズルをクリア！\n"
             text += "クリアタイム：" + (Math.floor(time / 10) / 100).toFixed(2) + "秒\n";
+            text += "記憶時間：" + (Math.floor(memoryTime / 10) / 100).toFixed(2) + "秒\n";
             text += "手数：" + board.moves;
             let url = phina.social.Twitter.createURL({
                 text: text,
-                hashtags: '見えないスライドパズル'
+                hashtags: '見えないスライドパズル,見えないスライドパズルDual'
             });
             window.open(url, 'share window', 'width=480, height=320');
         };

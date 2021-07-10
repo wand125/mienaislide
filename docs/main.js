@@ -524,7 +524,7 @@ phina.define('Game',{
         let tweet = function () {
             let text = (cheating === 0) ? "一度も数字を見ずに" : cheating + "回数字を見て";
             text += (puzzleSize === 3) ? "8" : "15";
-            text += "パズルをクリア！\n"
+            text += "パズル"+({2: '[Dual]',3:'[Triple]'})[boardCount]+"をクリア！\n"
             text += "クリアタイム：" + (Math.floor(time / 10) / 100).toFixed(2) + "秒\n";
             text += "記憶時間：" + (Math.floor(memoryTime / 10) / 100).toFixed(2) + "秒\n";
             text += "手数：" + board.moves;

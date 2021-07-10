@@ -112,6 +112,26 @@ phina.define('Title',{
             fontSize: 32,
             fontFamily: FONT_FAMILY
         }).addChildTo(start8Button);
+
+        let start8TripleButton = RectangleShape({
+            width: (PIECE_SIZE - 16) * 2,
+            height: 96,
+            fill: 'darkorange',
+            stroke: 'chocolate',
+            strokeWidth: 12,
+            cornerRadius: 10
+        }).addChildTo(this);
+        start8TripleButton.setInteractive(true);
+        start8TripleButton.onpointstart = function () {
+            self.exit({ puzzleSize: 3, count: 3 });
+        };
+        Label({
+            text: "８トリプル",
+            fill: 'white',
+            fontSize: 32,
+            fontFamily: FONT_FAMILY
+        }).addChildTo(start8TripleButton);
+
         // スタートボタン(15)
         let start15Button = RectangleShape({
             width: (PIECE_SIZE - 16) * 2,
@@ -133,6 +153,7 @@ phina.define('Title',{
         }).addChildTo(start15Button);
         //ボタン配置
         start8Button.setPosition(this.gridX.center(-4), this.gridY.center(3));
+        start8TripleButton.setPosition(this.gridX.center(-4), this.gridY.center(0.5));
         start15Button.setPosition(this.gridX.center(4), this.gridY.center(3));
         // howToButton.setPosition(this.gridX.center(0), this.gridY.center(6));
         linkButton.setPosition(this.gridX.center(0), this.gridY.center(6));
@@ -213,6 +234,7 @@ phina.define('Game',{
         let self = this;
         // パズルサイズを前シーンから受け取る
         let puzzleSize = param.puzzleSize;
+        const boardCount = param.count ?? 2;
         // ピース配置の配列
         // 変数
         let time = 0;  // 経過時間
@@ -362,7 +384,7 @@ phina.define('Game',{
                 const pieceGridX = Grid({
                     width: puzzleSize * this.pieceSize,
                     columns: puzzleSize,
-                    offset: self.gridX.center() * (0.5+this.index) - (puzzleSize * this.pieceSize) / 2 + (this.pieceSize) / 2
+                    offset: self.gridX.center() * (1 + 2 * this.index) / boardCount - (puzzleSize * this.pieceSize) / 2 + (this.pieceSize) / 2
                 });
                 const pieceGridY = Grid({
                     width: puzzleSize * this.pieceSize,
@@ -412,6 +434,10 @@ phina.define('Game',{
         }
         game.boards.push(new Board(0));
         game.boards.push(new Board(1));
+
+        if (boardCount === 3){
+            game.boards.push(new Board(2));
+        }
         const board = new Board();
 
         // sprites
@@ -421,7 +447,6 @@ phina.define('Game',{
         // -------------------------------- function --------------------------------------//
         // ピース位置をシャッフルする
         // パリティチェックを行い，解答不能なら修正する
-
 
         // ピースをスライドする
         // ピースが揃っているかどうかチェック
